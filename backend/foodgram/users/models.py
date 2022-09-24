@@ -39,6 +39,8 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         default=USER
     )
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     @property
     def is_admin(self):
