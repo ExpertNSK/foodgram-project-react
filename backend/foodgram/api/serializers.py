@@ -1,8 +1,40 @@
 from rest_framework import serializers, status
 from rest_framework.validators import UniqueValidator
-from djoser.serializers import TokenCreateSerializer
+from django.contrib.auth import password_validation
 
 from users.models import User
+
+
+class PasswordEditSerializer(serializers.ModelSerializer):
+    new_password = serializers.CharField(
+        max_length=150,
+        required=True,
+        write_only=True
+    )
+    current_password = serializers.CharField(
+        max_length=150,
+        required=True,
+        write_only=True
+    )
+
+    def validate_new_password(self, value):
+        if value is None or value == '':
+            return serializers.ValidationError(
+                {"new_password": "Обязательное поле."}
+            )
+        password_validation.validate_password(value, self.instance)
+        return value
+    
+    def validate_current_password(self, value):
+        if value is None or value == '':
+            return serializers.ValidationError(
+                {"current_password": "Обязательное поле."}
+            )
+        return value
+
+    class Meta:
+        model = User
+        fields = ('current_password', 'new_password',)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -36,6 +68,10 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Имя пользователя содержит недопустимые символы или равно "me"!',
             )
+        return value
+    
+    def validate_password(self, value):
+        password_validation.validate_password(value, self.instance)
         return value
 
     class Meta:
