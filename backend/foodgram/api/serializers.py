@@ -3,7 +3,17 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth import password_validation
 
 from users.models import User
-from recipes.models import Tag
+from users.validators import validate_username
+from recipes.models import Ingredient, Tag
+
+
+class IngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ingredient
+        fields = (
+            'id', 'name', 'measurement_unit',
+        )
+
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,26 +67,13 @@ class UserSerializer(serializers.ModelSerializer):
         required=True,
         max_length=150,
         validators=[
-            UniqueValidator(queryset=User.objects.all())
+            UniqueValidator(queryset=User.objects.all()),
+            validate_username,
         ]
     )
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
     password = serializers.CharField(max_length=150, write_only=True)
-
-    def validate_username(self, value):
-        invalid_username = False
-        fail_sym = r'^[\w.@+-]+\z'
-        if value.lower() == 'me':
-            invalid_username = True
-        for chr in value:
-            if chr in fail_sym:
-                invalid_username = True
-        if invalid_username:
-            raise serializers.ValidationError(
-                'Имя пользователя содержит недопустимые символы или равно "me"!',
-            )
-        return value
     
     def validate_password(self, value):
         password_validation.validate_password(value, self.instance)
