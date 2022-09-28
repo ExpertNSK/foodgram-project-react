@@ -3,6 +3,14 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth import password_validation
 
 from users.models import User
+from recipes.models import Tag
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = (
+            'id', 'name', 'color', 'slug',
+        )
 
 
 class PasswordEditSerializer(serializers.ModelSerializer):

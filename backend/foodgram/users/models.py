@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+from .validators import UsernameValidator
+
 
 USER = 'user'
 ADMIN = 'admin'
@@ -16,6 +18,7 @@ class User(AbstractUser):
         'Имя пользователя',
         max_length=150,
         unique=True,
+        validators=[UsernameValidator,]
     )
     first_name = models.CharField(
         'Имя',

@@ -5,7 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from users.models import User
-from .serializers import PasswordEditSerializer, UserSerializer
+from recipes.models import Tag
+from .serializers import PasswordEditSerializer, TagSerializer, UserSerializer
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
