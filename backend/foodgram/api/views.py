@@ -1,12 +1,17 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from users.models import User
-from recipes.models import Ingredient, Tag
-from .serializers import IngredientSerializer, PasswordEditSerializer, TagSerializer, UserSerializer
+from recipes.models import Ingredient, Recipe, Tag
+from .serializers import IngredientSerializer, PasswordEditSerializer, RecipeSerializer, TagSerializer, UserSerializer
+
+
+class RecipeViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer
 
 
 class IngredientViewSet(viewsets.ModelViewSet):

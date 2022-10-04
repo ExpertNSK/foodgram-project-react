@@ -1,26 +1,12 @@
-from rest_framework import serializers, status
+from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth import password_validation
+from django.core.validators import MinValueValidator
+from drf_extra_fields.fields import Base64ImageField
 
 from users.models import User
 from users.validators import validate_username
-from recipes.models import Ingredient, Tag
-
-
-class IngredientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Ingredient
-        fields = (
-            'id', 'name', 'measurement_unit',
-        )
-
-
-class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = (
-            'id', 'name', 'color', 'slug',
-        )
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 
 
 class PasswordEditSerializer(serializers.ModelSerializer):
@@ -96,3 +82,48 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+
+class IngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ingredient
+        fields = (
+            'id', 'name', 'measurement_unit',
+        )
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = (
+            'id', 'name', 'color', 'slug',
+        )
+
+
+class RecipeIngredientSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit')
+
+    class Meta:
+        model = RecipeIngredient
+        fields = (
+            'id', 'name', 'measurement_unit', 'amount',
+        )
+
+
+class RecipeSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many=True)
+    author = UserSerializer()
+    ingredients = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id', 'tags', 'author', 'ingredients',
+            'name', 'image', 'text', 'cooking_time',
+        )
+    
+    def get_ingredients(self, obj):
+        ingredients = RecipeIngredient.objects.filter(recipe=obj)
+        return RecipeIngredientSerializer(ingredients, many=True).data
