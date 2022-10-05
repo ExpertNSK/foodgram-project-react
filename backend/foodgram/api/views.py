@@ -6,12 +6,16 @@ from rest_framework.response import Response
 
 from users.models import User
 from recipes.models import Ingredient, Recipe, Tag
-from .serializers import IngredientSerializer, PasswordEditSerializer, RecipeSerializer, TagSerializer, UserSerializer
+from .serializers import CreateRecipeSerializer, IngredientSerializer, PasswordEditSerializer, RecipeSerializer, TagSerializer, UserSerializer
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return RecipeSerializer
+        return CreateRecipeSerializer
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
