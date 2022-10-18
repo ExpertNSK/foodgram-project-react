@@ -6,7 +6,7 @@ from drf_extra_fields.fields import Base64ImageField
 
 from users.models import User
 from users.validators import validate_username
-from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag
+from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag, Favorite
 
 
 class PasswordEditSerializer(serializers.ModelSerializer):
@@ -197,3 +197,25 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         return RecipeSerializer(instance, context={
             'request': self.context.get('request')
         }).data
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe')
+    
+    def to_representation(self, instance):
+        return ShowFavoriteSerializer(instance, context={
+            'request': self.context.get('request')
+        }).data
+
+
+class ShowFavoriteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='recipe.id')
+    name = serializers.CharField(source='recipe.name')
+    image = serializers.URLField(source='recipe.image')
+    cooking_time = serializers.IntegerField(source='recipe.cooking_time')
+
+    class Meta:
+        model = Favorite
+        fields = ('id', 'name', 'image', 'cooking_time')

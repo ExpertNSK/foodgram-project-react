@@ -1,12 +1,17 @@
 import os
+
+from os.path import join
 from dotenv import load_dotenv
 from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv()
+INFRA_PATH = join(BASE_DIR.parent.parent, 'infra')
+ENV_PATH = join(INFRA_PATH, '.env')
 
-SECRET_KEY = os.getenv('SECRET_KEY', default='0qrvz%6&q-&a8f_#&v$zxn4bgub')
+load_dotenv(ENV_PATH)
+
+SECRET_KEY = os.environ.get('SECRET_KEY', default='0qrvz%6&q-&a8f_#&v$zxn4bgub')
 
 DEBUG = True
 
@@ -22,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
@@ -97,7 +103,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS':
         'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 6
+    'PAGE_SIZE': 6,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ]
 }
 
 

@@ -1,26 +1,70 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework import viewsets, status, views
+from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from users.models import User
-from recipes.models import Ingredient, Recipe, Tag
-from .serializers import CreateRecipeSerializer, IngredientSerializer, PasswordEditSerializer, RecipeSerializer, TagSerializer, UserSerializer
+from recipes.models import Ingredient, Recipe, Tag, Favorite
+from .serializers import CreateRecipeSerializer, FavoriteSerializer, IngredientSerializer, PasswordEditSerializer, RecipeSerializer, TagSerializer, UserSerializer, ShowFavoriteSerializer
+from .pagination import CustomPagination
+from .permissions import IsAuthorOrReadOnly
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
+    permission_classes = [IsAuthorOrReadOnly,]
+    pagination_class = CustomPagination
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return RecipeSerializer
         return CreateRecipeSerializer
+    
+
+class FavoriteViewSet(views.APIView):
+    @permission_classes(IsAuthenticated)
+    def post(self, request, id):
+        user = request.user.id
+        recipe = get_object_or_404(Recipe, id=id)
+        data = {
+            'user': user,
+            'recipe': recipe.id
+        }
+        if not Favorite.objects.filter(
+            user=user, recipe=recipe).exists():
+            serializer = FavoriteSerializer(
+                data=data, context={'request': request}
+            )
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data, status.HTTP_201_CREATED)
+        return Response(status.HTTP_400_BAD_REQUEST)
+    
+    @permission_classes(IsAuthenticated)
+    def delete(self, request, id):
+        recipe =get_object_or_404(Recipe, id=id)
+        if Favorite.objects.filter(
+            user=request.user, recipe=recipe
+        ).exists():
+            Favorite.objects.filter(user=request.user, recipe=recipe).delete()
+            return Response(status.HTTP_204_NO_CONTENT)
+        return Response(status.HTTP_400_BAD_REQUEST)
+
+
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
-    queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    filter_backends = [DjangoFilterBackend]
+
+    def get_queryset(self):
+        queryset = Ingredient.objects.all()
+        name = self.request.query_params.get('name')
+        if name is not None:
+            queryset = queryset.filter(name__contains=name)
+        return queryset
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -31,6 +75,7 @@ class TagViewSet(viewsets.ModelViewSet):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    pagination_class = CustomPagination
 
     @action(
         ['GET'],
