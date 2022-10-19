@@ -13,14 +13,27 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     permission_classes = [IsAuthorOrReadOnly,]
     pagination_class = CustomPagination
+    filter_backends = [DjangoFilterBackend]
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return RecipeSerializer
         return CreateRecipeSerializer
+    
+    def get_queryset(self):
+        queryset = Recipe.objects.all()
+        is_favorite = self.request.query_params.get('is_favorite')
+        author = self.request.query_params.get('author')
+        tags = self.request.query_params.get('tags')
+        if is_favorite == '1':
+            queryset = queryset.filter(favorites__user=self.request.user)
+        if author is not None:
+            queryset = queryset.filter(author__id=author)
+        if tags is not None:
+            queryset = queryset.filter(tags__slug=tags)
+        return queryset
     
 
 class FavoriteViewSet(views.APIView):
@@ -51,8 +64,6 @@ class FavoriteViewSet(views.APIView):
             Favorite.objects.filter(user=request.user, recipe=recipe).delete()
             return Response(status.HTTP_204_NO_CONTENT)
         return Response(status.HTTP_400_BAD_REQUEST)
-
-
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
