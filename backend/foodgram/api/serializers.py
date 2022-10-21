@@ -4,7 +4,7 @@ from django.contrib.auth import password_validation
 from django.core.validators import MinValueValidator
 from drf_extra_fields.fields import Base64ImageField
 
-from users.models import User
+from users.models import User, Subscription
 from users.validators import validate_username
 from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag, Favorite
 
@@ -226,3 +226,55 @@ class ShowFavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
         fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ('user', 'author')
+    
+    def to_representation(self, instance):
+        return ShowSubscribesSerializer(instance, context={
+            'request': self.context.get('request')
+        }).data
+
+
+class ShowSubscribesSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='author.email')
+    username = serializers.CharField(source='author.username')
+    first_name = serializers.CharField(source='author.first_name')
+    last_name = serializers.CharField(source='author.last_name')
+    id = serializers.IntegerField(source='author.id')
+
+    class Meta:
+        model = User
+        fields = (
+            'email', 'id', 'username', 'first_name',
+            'last_name', 'is_subscribed', 'recipes',
+            'recipes_count'
+        )
+    
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if request is None or request.user.is_anonymous:
+            return False
+        return Subscription.objects.filter(
+            user=request.user, author=obj.author).exists()
+    
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        if request is None or request.user.is_anonymous:
+            return False
+        recipes = Recipe.objects.filter(author=obj.author)
+        limit = request.query_params.get('recipes_limit')
+        if limit:
+            recipes = recipes[:int(limit)]
+        return ShowFavoriteSerializer(
+            recipes, many=True, context={'request': request}
+        ).data
+
+    def get_recipes_count(self, obj):
+        return Recipe.objects.filter(author=obj.author).count()

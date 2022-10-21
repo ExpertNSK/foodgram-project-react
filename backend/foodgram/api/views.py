@@ -4,12 +4,39 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
-from users.models import User
+from users.models import User, Subscription
 from recipes.models import Ingredient, Recipe, Tag, Favorite
-from .serializers import CreateRecipeSerializer, FavoriteSerializer, IngredientSerializer, PasswordEditSerializer, RecipeSerializer, TagSerializer, UserSerializer, ShowFavoriteSerializer
+from .serializers import CreateRecipeSerializer, FavoriteSerializer, IngredientSerializer, PasswordEditSerializer, RecipeSerializer, ShowSubscribesSerializer, SubscribeSerializer, TagSerializer, UserSerializer, ShowFavoriteSerializer
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
+
+
+class SubscriptionsView(views.APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def post(self, request, id):
+        user = request.user
+        author = get_object_or_404(User, id=id)
+        data = {
+            'user': user.id,
+            'author': author.id
+        }
+        subscribe = Subscription.objects.filter(user=user, author=author).exists()
+        if not subscribe:
+            serializer = SubscribeSerializer(data=data, context={'request': request})
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data, status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, id):
+        user = request.user
+        author = get_object_or_404(User, id=id)
+        if Subscription.objects.filter(user=user, author=author).exists():
+            Subscription.objects.filter(user=user, author=author).delete()
+            return Response(status.HTTP_204_NO_CONTENT)
+        return Response(status.HTTP_400_BAD_REQUEST)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -36,7 +63,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return queryset
     
 
-class FavoriteViewSet(views.APIView):
+class FavoriteView(views.APIView):
     @permission_classes(IsAuthenticated)
     def post(self, request, id):
         user = request.user.id
@@ -122,3 +149,15 @@ class UserViewSet(viewsets.ModelViewSet):
         user.set_password(request.data.get('new_password'))
         user.save()
         return Response("Пароль успешно изменен.", status.HTTP_204_NO_CONTENT)
+    
+    @action(
+        ['GET'],
+        detail=False,
+        url_path='subscriptions',
+        serializer_class=ShowSubscribesSerializer,
+        permission_classes=[IsAuthenticated,]
+    )
+    def subscriptions(self, request):
+        queryset = Subscription.objects.filter(user=request.user)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status.HTTP_200_OK)
