@@ -5,11 +5,38 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from users.models import User, Subscription
-from recipes.models import Ingredient, Recipe, Tag, Favorite
-from .serializers import CreateRecipeSerializer, FavoriteSerializer, IngredientSerializer, PasswordEditSerializer, RecipeSerializer, ShowSubscribesSerializer, SubscribeSerializer, TagSerializer, UserSerializer, ShowFavoriteSerializer
+from recipes.models import Ingredient, Recipe, Tag, Favorite, ShoppingCart, RecipeIngredient
+from .serializers import CreateRecipeSerializer, FavoriteSerializer, IngredientSerializer, PasswordEditSerializer, RecipeSerializer, ShoppingCartSerializer, ShowSubscribesSerializer, SubscribeSerializer, TagSerializer, UserSerializer, ShowFavoriteSerializer
 from .pagination import CustomPagination
 from .permissions import IsAuthorOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
+
+
+class ShoppingCartView(views.APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def post(self, request, id):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=id)
+        shopping_cart = ShoppingCart.objects.filter(user=user, recipe=recipe).exists()
+        data = {
+            'user': user.id,
+            'recipe': recipe.id
+        }
+        if not shopping_cart:
+            serializer = ShoppingCartSerializer(data=data, context={'request': request})
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data, status.HTTP_201_CREATED)
+        return Response(status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, id):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=id)
+        if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
+            ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
+            return Response(status.HTTP_204_NO_CONTENT)
+        return Response (status.HTTP_400_BAD_REQUEST)
 
 
 class SubscriptionsView(views.APIView):
@@ -62,9 +89,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(tags__slug=tags)
         return queryset
     
+    @action(
+        ['GET'],
+        detail=False,
+        url_path='download_shopping_cart',
+        permission_classes=[IsAuthenticated,]
+    )
+    def download_shopping_cart(self):
+        pass
 
 class FavoriteView(views.APIView):
-    @permission_classes(IsAuthenticated)
+    permission_classes = [IsAuthenticated,]
     def post(self, request, id):
         user = request.user.id
         recipe = get_object_or_404(Recipe, id=id)
@@ -82,7 +117,6 @@ class FavoriteView(views.APIView):
                 return Response(serializer.data, status.HTTP_201_CREATED)
         return Response(status.HTTP_400_BAD_REQUEST)
     
-    @permission_classes(IsAuthenticated)
     def delete(self, request, id):
         recipe =get_object_or_404(Recipe, id=id)
         if Favorite.objects.filter(

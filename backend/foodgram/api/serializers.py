@@ -1,12 +1,12 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
+from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
 from django.contrib.auth import password_validation
 from django.core.validators import MinValueValidator
 from drf_extra_fields.fields import Base64ImageField
 
 from users.models import User, Subscription
 from users.validators import validate_username
-from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag, Favorite
+from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeTag, Tag, Favorite, ShoppingCart
 
 
 class PasswordEditSerializer(serializers.ModelSerializer):
@@ -278,3 +278,14 @@ class ShowSubscribesSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, obj):
         return Recipe.objects.filter(author=obj.author).count()
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = ('user', 'recipe')
+    
+    def to_representation(self, instance):
+        return ShowFavoriteSerializer(instance, context={
+            'request': self.context.get('request')
+        }).data
