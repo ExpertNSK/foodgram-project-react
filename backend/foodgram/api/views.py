@@ -1,3 +1,5 @@
+from django.db.models import Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, views
 from rest_framework.decorators import action, permission_classes
@@ -28,7 +30,7 @@ class ShoppingCartView(views.APIView):
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 return Response(serializer.data, status.HTTP_201_CREATED)
-        return Response(status.HTTP_400_BAD_REQUEST)
+        return Response({"errors": "Данный рецепт уже внесён в список покупок!"}, status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, id):
         user = request.user
@@ -36,7 +38,7 @@ class ShoppingCartView(views.APIView):
         if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
             ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
             return Response(status.HTTP_204_NO_CONTENT)
-        return Response (status.HTTP_400_BAD_REQUEST)
+        return Response ({"errors": "Рецепт в списке покупок не найден!"}, status.HTTP_400_BAD_REQUEST)
 
 
 class SubscriptionsView(views.APIView):
@@ -79,12 +81,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Recipe.objects.all()
         is_favorite = self.request.query_params.get('is_favorite')
+        is_in_shopping_cart = self.request.query_params.get('is_in_shopping_cart')
         author = self.request.query_params.get('author')
         tags = self.request.query_params.get('tags')
         if is_favorite == '1':
             queryset = queryset.filter(favorites__user=self.request.user)
         if author is not None:
             queryset = queryset.filter(author__id=author)
+        if is_in_shopping_cart == '1':
+            queryset = queryset.filter(shoppingcarts__user=self.request.user)
         if tags is not None:
             queryset = queryset.filter(tags__slug=tags)
         return queryset
@@ -95,8 +100,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='download_shopping_cart',
         permission_classes=[IsAuthenticated,]
     )
-    def download_shopping_cart(self):
-        pass
+    def download_shopping_cart(self, request):
+        ingredients_list = 'Список покупок:'
+        ingredients = RecipeIngredient.objects.filter(
+            recipe__shoppingcarts__user=request.user
+        ).values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(amount=Sum('amount'))
+        for ingredient in ingredients:
+            ingredients_list += (
+                f"\n{ingredient['ingredient__name']} - "
+                f"{ingredient['amount']} {ingredient['ingredient__measurement_unit']}"
+            )
+        file = 'shopping_cart'
+        response = HttpResponse(ingredients_list, 'Content-Type: application/pdf')
+        response['Content-Disposition'] = f'attachment; filename={file}.pdf'
+        print(ingredients_list)
+        return response
 
 class FavoriteView(views.APIView):
     permission_classes = [IsAuthenticated,]
