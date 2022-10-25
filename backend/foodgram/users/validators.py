@@ -1,16 +1,9 @@
-from django import forms
+from django.core.exceptions import ValidationError
 
 
 def validate_username(value):
-    fail_sym = r'^[\w.@+-]+\z'
-    for chr in value:
-        if chr in fail_sym:
-            raise forms.ValidationError(
-                'Недопустимые символы в имени пользователя!',
-                params={'value': value},
-            )
-    if value.lower() == 'me':
-        raise forms.ValidationError(
-            'Недопустимое имя пользователя!',
-            params={'value': value},
+    if value == 'me':
+        raise ValidationError(
+            'Имя пользователя "me" не разрешено.'
         )
+    return value
