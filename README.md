@@ -1,9 +1,10 @@
+![example workflow](https://github.com/expertnsk/foodgram-project-react/actions/workflows/main.yml/badge.svg)
 # Foodgram - социальная сеть о кулинарии
-### Делитесь рецептами и пробуйте новые 🍰
+### Делитесь рецептами и пробуйте новые
 ---
 ### Сервис доступен по адресу:
 ```
-
+grocassist.sytes.net
 ```
 
 ### Возможности сервиса:
@@ -21,7 +22,7 @@
 ### Запуск проекта:
 1. Клонируйте проект:
 ```
-
+git clone git@github.com:ExpertNSK/foodgram-project-react.git
 ```
 2. Подготовьте сервер:
 ```
@@ -34,9 +35,8 @@ scp .env <username>@<host>:/home/<username>/
 sudo apt install docker.io 
 sudo apt install docker-compose
 ```
-4. Соберите контейнер и выполните миграции:
+4. Выполните миграции:
 ```
-sudo docker-compose up -d --build
 sudo docker-compose exec backend python manage.py migrate
 ```
 5. Создайте суперюзера и соберите статику:
