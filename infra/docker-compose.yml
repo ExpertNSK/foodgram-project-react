@@ -10,9 +10,7 @@ services:
       - ./.env
 
   backend:
-    build:
-      context: ../backend/foodgram
-      dockerfile: Dockerfile
+    image: expertnsk/foodgram_bckend:latest
     volumes:
       - ../static/:/app/static/
       - ../media/:/app/media/
@@ -25,9 +23,7 @@ services:
     restart: always
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: expertnsk/foodgram_frntend:latest
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
