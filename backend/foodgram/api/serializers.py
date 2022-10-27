@@ -196,10 +196,6 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             ) for ingredient in ingredients
         ])
 
-    def create_tags(self, tags, recipe):
-        for tag in tags:
-            RecipeTag.objects.create(recipe=recipe, tag=tag)
-
     def create(self, validated_data):
         """
         Создание рецепта.
@@ -211,7 +207,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         author = self.context.get('request').user
         recipe = Recipe.objects.create(author=author, **validated_data)
         self.create_ingredients(ingredients, recipe)
-        self.create_tags(tags, recipe)
+        recipe.tags.set(tags)
         return recipe
 
     def update(self, instance, validated_data):
