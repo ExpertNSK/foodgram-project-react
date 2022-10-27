@@ -2,11 +2,18 @@ from django.contrib import admin
 
 from foodgram.settings import EMPTY
 
-from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag, RecipeIngredient
+
+
+@admin.register(RecipeIngredient)
+class RecipeIngredientAdmin(admin.ModelAdmin):
+    model = RecipeIngredient
+    fields = ('recipe', 'ingredient', 'amount')
 
 
 class IngredientsInLine(admin.TabularInline):
     model = Recipe.ingredients.through
+    extra = 0
 
 
 @admin.register(Favorite)
