@@ -192,7 +192,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             RecipeIngredient(
                 recipe=recipe,
                 amount=ingredient['amount'],
-                ingredient=ingredient['ingredients'],
+                ingredient=ingredient['ingredient'],
             ) for ingredient in ingredients
         ])
 
