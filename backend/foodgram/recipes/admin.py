@@ -14,6 +14,7 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
 class IngredientsInLine(admin.TabularInline):
     model = Recipe.ingredients.through
     extra = 0
+    min_num = 1
 
 
 @admin.register(Favorite)

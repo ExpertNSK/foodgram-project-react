@@ -25,6 +25,9 @@ class Ingredient(models.Model):
                 name='ingredient_name_unit_unique'
             )
         ]
+    
+    def __str__(self):
+        return f'{self.name}, {self.measurement_unit}'
 
 
 class Tag(models.Model):
